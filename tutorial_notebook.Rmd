@@ -1,0 +1,227 @@
+---
+title: "Tutorial R Notebook"
+author: "Katherine Wood"
+output:
+  github_document: default
+  html_notebook: default
+---
+This notebook is based loosely on [this cheatsheet](https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf) that shows some of the most basic functionality of R notebooks, including code, markdown, and Latex.
+
+#Code
+
+##Chunks
+You can imbed chunks of R code right into the notebooks and run them. Why not beat that long-dead horse of demo data, the iris dataset?
+
+```{r}
+head(iris)
+```
+
+If you print a dataframe, it automatically gets formatted in this nice way.
+
+We can also look at the summary:
+```{r}
+summary(iris)
+```
+
+And of course, you can use whatever libraries you like, as usual. We can set an option in this chunk to disable the messages that print to the console when you do things like load libraries. We could also turn off warnings, set options for error handling, or specify how we want results and code interleaved, or if we want the code in the output document at all. Setting the `tidy` argument to `TRUE` also spiffs up your code for you (cleaning up multiline expressions with indenting, for instance) in the output. So customizable! 
+```{r message=FALSE}
+library(dplyr) #We could also have set the quietly argument to TRUE, but where's the fun in that
+(meanpetals <- group_by(iris, Species) %>%
+               summarize(length = mean(Petal.Length), width = mean(Petal.Width)))
+```
+Boring old data demos never looked so fresh!
+
+##Inline
+Inline code executes invisibly, so all you see is the output. For example, I can run a function right here and now to get the weekday:  
+Today is a `r weekdays(Sys.time())`.
+
+You can also set global parameters in the header and reference them throughout the document.
+
+This inline execution has various uses. If you need code primarily for its output, like getting the current date or weekday and adding it into text, then inline works really well and better than a chunk.
+
+#Displaying Data
+
+If you're writing up a tutorial or a report on results, you'll more likely than not need to display data in the form of plots and tables. This is super easy in R Notebooks, and there are lots of options.
+
+##Plots
+Let's see what the sepal lengths in Iris are up to by species, just for kicks. I'll do some more extensive data manipulation in a code chunk, just to show we can. Since I loaded dplyr in another code chunk further up, we're good there.
+```{r}
+library(ggplot2)
+iris_plot <- ggplot(data=select(iris, Species, Sepal.Length), 
+                    aes(x=Species, y=Sepal.Length, color=Species, fill=Species)) +
+  geom_violin(alpha=.1) +
+  geom_point(position=position_jitter(w=.2)) +
+  geom_crossbar(stat='summary',fun.y=mean, fun.ymax=mean, fun.ymin=mean, fatten=2, width=.5) +
+  theme_minimal()
+print(iris_plot)
+```
+
+Fascinating, I guess!
+
+The nice thing about this is that these plots are completely reproduceable--they'll be generated everytime you run the notebook. You can keep the code cell that generates it in the output, so people can see it, or if you want a cleaner output with just the results, you can hide the generating code cell. You can tailor it to your options.
+
+##Tables
+
+Tables can be a real pain-point when doing manuscripts, but these can be automated in R Notebooks, rendered right into text, and some look pretty good. Here's what `knitr` will give you (it won't look right until it's rendered):
+```{r results='asis'}
+knitr::kable(meanpetals)
+```
+
+That looks alright!
+
+There's also `xtable,` which will make it easier to set the appearance of the table through HTML attributes. This won't show up until it's rendered, though.
+```{r results='asis'}
+print(xtable::xtable(meanpetals), type='html', html.table.attributes='border=0  width=250')
+```
+
+Finally, here's a table fron the `stargazer` package. Also lots of attributes we can set here. It's designed mostly for pretty formatting of regression model results and summary stats, but we can get it to do direct output instead.
+```{r results='asis'}
+stargazer::stargazer(as.data.frame(meanpetals), type='html', summary=F)
+```
+
+If none of the formatting is quite to your liking, or you don't have easily available options to set, you can tweak the appearance with your [own CSS](http://rmarkdown.rstudio.com/html_document_format.html#custom_css).
+
+If none of this is satisfying, or it's more informal, you can always just print the dataframe.
+```{r}
+(meanpetals)
+```
+
+I don't know that this makes tables any less painless, but at least now there's more than one option for the pain.
+
+#Formatting
+
+If you're writing up a report or manuscript, you also need your text to look nice, not just your data. This is where knowing a little bit of Markdown comes in handy.
+
+##Markdown
+Just type to get pretty plaintext. To quote `verbatim code` without running anything, wrap it in backticks(\`). This is distinct from inline code, which is prefaced with `r` within the ticks. I'll do this throughout to demonstrate how to construct the effects you see.
+
+To display a special character, like \_underscores\_ or asterisks \*, escape them with a backslash (\\).
+
+To add a single linebreak without a blank line, end a line with two spaces.`..`  
+Ta-da!
+
+`*italics*`: *italics*  
+`**bold**`: **bold**  
+`**_both_**`: **_both_**  
+`~~strikethrough~~`: ~~strikethrough~~  
+`subscript~1~`: subscript~1~  
+`superscript^2^`: superscript^2^  
+
+You can do bulleted lists: 
+
+`* start with an asterisk, plus, or minus ` 
+`    + then indent 4 spaces`
+`        - then indent again `
+`* then more stuff`
+
+* start with an asterisk, plus, or minus  
+    + then indent 4 spaces
+        - then indent again 
+* then more stuff
+
+And ordered ones:
+
+`1. Big thing`
+`    i) small thing \+ indent`
+`      A. sub-small thing`
+`2. Another big thing`
+
+1. Big thing
+    i) small thing \+ indent  
+      A. sub-small thing
+2. Another big thing
+      
+Oh, and footnotes... `[^1]` [^1]
+
+[^1]: `[^1]:` Are pretty easy.
+
+`#Header 1`
+
+#Header 1
+
+`##Header 2`
+
+##Header 2
+
+`###Header 3`  
+
+###Header 3
+
+Add horizontal lines with at least three hyphens, asterisks, or underscores:
+
+`***`
+
+***
+
+Tables are a little strange in the raw, but look nice once rendered.
+
+```
+| Right-aligned | Left-aligned | Centered | Default |
+|-:|:-|:-:|-|
+|1|1|1|1|
+|12|12|12|12| 
+|*1*|_2_|~~3~~|4^2^|
+```
+
+| Right-aligned | Left-aligned | Centered | Default |
+|-:|:-|:-:|-|
+|1|1|1|1|
+|12|12|12|12|
+|*1*|_2_|~~3~~|4^2^|
+
+Images are easy, too.  
+`![The adorabilis octopus, for your viewing pleasure](http://blogs.discovermagazine.com/d-brief/files/2015/06/octopus.jpg)`
+
+![The adorabilis octopus, for your viewing pleasure](http://blogs.discovermagazine.com/d-brief/files/2015/06/octopus.jpg)
+
+
+##Latex and Equations
+Math formatting can be done with the same notation used in Latex.
+
+To do inline equations or mathematical notation, use single dollar signs: `$f(x) = \frac{1}{x}$`. $f(x) = \frac{1}{x}$
+
+To do an equation block, use double dollar signs: `$$-b \pm \sqrt{\frac{b^2 - 4ac}{2a}}$$`  
+$$-b \pm \sqrt{\frac{b^2 - 4ac}{2a}}$$
+
+We can do Greek letters: `$\Sigma \; \alpha \; \gamma$`: $\Sigma \; \alpha \; \gamma$
+
+Sums, products, and integrals can be inline with inner limits: `$\sum_{i=1}^{\infty}x_i$` $\sum_{i=1}^{\infty}x_i$  
+Or inline with outer limits: `$\prod\limits_{i=1}^{\infty}\frac{1}{x_i}$` $\prod\limits_{i=1}^{\infty}\frac{1}{x_i}$
+
+Or block: `$$\int_{a}^{b}x^2dx$$` $$\int_{a}^{b}x^2dx$$
+
+And matrices are lovely, too. With parens:  
+```
+$\begin{pmatrix}  
+1 & 2 & 3 \\ 
+4 & 5 & 6
+\end{pmatrix}$
+```
+$\begin{pmatrix}
+1 & 2 & 3 \\
+4 & 5 & 6
+\end{pmatrix}$ 
+
+Brackets:  
+```
+$\begin{bmatrix}  
+1 & 2 \\ 
+4 & 5   
+\end{bmatrix}$  
+```
+$\begin{bmatrix}
+1 & 2 \\
+4 & 5 
+\end{bmatrix}$  
+
+Or itty-bitty(good for inline!):  
+```
+$\left[\begin{smallmatrix}  
+1 & 2 \\
+4 & 5   
+\end{smallmatrix}\right]$  
+```
+$\left[\begin{smallmatrix}
+1 & 2 \\
+4 & 5 
+\end{smallmatrix}\right]$
